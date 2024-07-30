@@ -70,8 +70,8 @@ module MICROCODE(
     $readmemh("C:\\personal\\V188\\verilator\\mcode.hex", data);
   end
 
-  always @(posedge clock) begin
-    q_a <= data[ address_a ][17:0];
+  always @(*) begin
+    q_a = data[ address_a ][17:0];
   end
 
 endmodule

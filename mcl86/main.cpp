@@ -10,7 +10,7 @@
 
 struct memory_t {
 
-  static const uint32_t addrTop = 1024 * 1024;
+  static const uint32_t memSize = 1u << 20;
 
   bool loadCom(const char *path) {
     FILE *fd = fopen(path, "rb");
@@ -30,16 +30,32 @@ struct memory_t {
   }
 
   bool init(const char *comPath) {
-    memory.reset(new uint8_t[addrTop]);
-    memset(memory.get(), 0x90, addrTop);
-    if (!loadCom(comPath)) {
-      return false;
-    }
+    memory.reset(new uint8_t[memSize]);
+    memset(memory.get(), 0xCC, memSize);
+    //if (!loadCom(comPath)) {
+    //  return false;
+    //}
     return true;
   }
 
   uint8_t read(uint32_t addr) const {
     return memory[addr];
+  }
+
+  void dump_display(const char* path) {
+
+    // 4Kb ram at 0xB0000
+
+    const uint32_t address = 0xB0000;
+
+    FILE *fd = fopen(path, "wb");
+    if (!fd) {
+      return;
+    }
+
+    const uint8_t* ptr = memory.get() + address;
+    fwrite(ptr, 1, 4 * 1024, fd);
+    fclose(fd);
   }
 
   void write(uint32_t addr, uint8_t data) {
@@ -55,119 +71,49 @@ struct memory_t {
 
 struct cpu_t {
 
-  static const uint64_t clockRatio = 16;
-
   cpu_t(memory_t &mem)
     : memory(mem) {
   }
 
-  void onCpuClock() {
-    tState = rtl.ale_o ? 0 : tState + 1;
-
-    dump();
-
-    if (rtl.ale_o) {
-      latchAddr = rtl.ad_o;
-    }
-    if (rtl.den_o) {
-      if (!rtl.iom_o && !rtl.rd_o) {
-        rtl.ad_i = onMemRead(latchAddr);
-      }
-      if (rtl.iom_o && !rtl.rd_o) {
-        rtl.ad_i = onPortRead(latchAddr);
-      }
-    }
-    if (rtl.dtr_o) {
-      if (!rtl.iom_o && !rtl.wr_o) {
-        onMemWrite(latchAddr, rtl.ad_o);
-      }
-      if (rtl.iom_o && !rtl.wr_o) {
-        onPortWrite(latchAddr, rtl.ad_i);
-      }
-    }
-  }
-
-  void dump() {
-    uint32_t pc =  rtl.rootp->top__DOT__cpu__DOT__biu__DOT__pfq_addr_out +
-                  (rtl.rootp->top__DOT__cpu__DOT__biu__DOT__biu_register_cs << 4);
-#if 1
-    if (rtl.ale_o) {
-      printf("pc: %05x\n", pc);
-    }
-    printf("t%d a:%05x di:%02x ale:%d wr:%d rd:%d iom:%d dtr:%d den:%d\n",
-      tState,
-      rtl.ad_o,
-      rtl.ad_i,
-      rtl.ale_o,
-      rtl.wr_o,
-      rtl.rd_o,
-      rtl.iom_o,
-      rtl.dtr_o,
-      rtl.den_o);
-#endif
-  }
-
   uint8_t onMemRead(uint32_t addr) {
-    printf("- mem read %05x\n", addr);
     return memory.read(addr);
   }
 
   void onMemWrite(uint32_t addr, uint8_t data) {
-    printf("- mem write %05x %02x\n", addr, data);
     memory.write(addr, data);
-  }
-
-  uint8_t onPortRead(uint32_t addr) {
-    printf("- port read %04x\n", addr);
-    return 0;
-  }
-
-  void onPortWrite(uint32_t addr, uint8_t data) {
-    printf("- port write %04x %02x\n", addr, data);
   }
 
   void tick() {
     ++clocks;
     // update clock signals
-    rtl.clk_i     =  clocks               & 1;
-    rtl.clk_cpu_i = (clocks / clockRatio) & 1;
-    // reset signal
-    rtl.rst_i = (clocks >= 4 && clocks <= 64);
+    rtl.iClk = clocks & 1;
     rtl.eval();
-    // detect rising edge of cpu clock
-    if (!cpuClkDelay && rtl.clk_cpu_i) {
-      onCpuClock();
+
+    if (rtl.oSramWe == 1) {
+      onMemWrite(rtl.iSramAddr, rtl.ioSramData);
     }
-    cpuClkDelay = rtl.clk_cpu_i;
+    else {
+      rtl.ioSramData = onMemRead(rtl.iSramAddr);
+    }
   }
 
   bool init() {
-    clocks      = 0;
-    cpuClkDelay = 0;
-    tState      = 0;
-    rtl.ad_i    = 0x90;  // nop
-    rtl.intr_i  = 0;
-    rtl.test_i  = 1;
-    rtl.nmi_i   = 0;
-    rtl.ready_i = 1;
+    clocks = 0;
     return true;
   }
 
   memory_t &memory;
-
   uint32_t latchAddr;
-
-  int tState;
+  int      tState;
   uint64_t clocks;
-  int cpuClkDelay;
-  V8088 rtl;
+  V8088    rtl;
 };
 
 int main(int argc, char **args) {
 
   Verilated::commandArgs(argc, args);
 
-  const char* path = "C:\\personal\\rtl8088\\tests\\OPCODE_7.COM";
+  const char* path = "C:\\personal\\rtl8088\\mcl86\\tests\\OPCODE_7.COM";
 
   memory_t mem;
   if (!mem.init(path)) {
@@ -181,9 +127,12 @@ int main(int argc, char **args) {
 
   cpu.memory.write(0xffff0, "\xEA\x00\x01\x00\x00", 5);
 
-  for (int i = 0; i < 20000; ++i) {
+  uint64_t max_cycles = 1ull << 32;
+  for (uint64_t i = 0; i < max_cycles; ++i) {
     cpu.tick();
   }
+
+  mem.dump_display("display.txt");
 
   return 0;
 }

@@ -93,7 +93,7 @@ int main(int argc, char **args) {
     rtl.iClk ^= 1;
     rtl.eval();
 
-    if (rtl.iClk == 1) {
+    if (rtl.iClk == 0) {
       continue;
     }
 
@@ -102,8 +102,8 @@ int main(int argc, char **args) {
 
     // port read
     if (rtl.oPRd != state.oPRd) {
-      rtl.iPData = 0xcc;
       state.oPRd = rtl.iPRd = rtl.oPRd;
+      rtl.iPData = 0xcc;
       printf("%u: <%03x> => %02x\n", i, rtl.oPort, rtl.iPData);
     }
 
@@ -127,9 +127,9 @@ int main(int argc, char **args) {
       printf("%u: [%06x] <= %02x\n", i, rtl.oAddr, rtl.oMData);
     }
 
-    if (rtl.rootp->top__DOT__state == (1 << 4)) {
+//    if (rtl.rootp->top__DOT__state == (1 << 4)) {
       dumpState(rtl);
-    }
+//    }
   }
 
   return 0;

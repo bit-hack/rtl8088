@@ -43,6 +43,7 @@
 // SOFTWARE.
 //
 //------------------------------------------------------------------------
+`timescale 1ns / 1ps
 `default_nettype none
 
 module mcl86_eu_core(
