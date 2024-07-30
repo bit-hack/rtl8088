@@ -6,7 +6,13 @@ module top(
   // sram interface
   output [19:0] iSramAddr,
   inout  [ 7:0] ioSramData,
-  output        oSramWe
+  output        oSramWe,
+  // video interface
+  output [ 5:0] oVgaR,
+  output [ 6:0] oVgaG,
+  output [ 5:0] oVgaB,
+  output        oVgaVSync,
+  output        oVgaHSync  
 );
 
   wire [7:0] cpuRamDataW; // data being written
@@ -19,7 +25,12 @@ module top(
     .iCpuRamDataR(ioSramData),
     .oCpuRamDataW(cpuRamDataW),
     .oCpuRamR    (),
-    .oCpuRamW    (cpuRamW)
+    .oCpuRamW    (cpuRamW),
+    .oVgaR       (oVgaR),
+    .oVgaG       (oVgaG),
+    .oVgaB       (oVgaB),
+    .oVgaVSync   (oVgaVSync),
+    .oVgaHSync   (oVgaHSync)
   );
 
   assign ioSramData = cpuRamW ? cpuRamDataW : 8'hzz;

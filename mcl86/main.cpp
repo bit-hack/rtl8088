@@ -127,7 +127,7 @@ int main(int argc, char **args) {
 
   cpu.memory.write(0xffff0, "\xEA\x00\x01\x00\x00", 5);
 
-  uint64_t max_cycles = 1ull << 32;
+  uint64_t max_cycles = 1ull << 28;
   for (uint64_t i = 0; i < max_cycles; ++i) {
     cpu.tick();
   }

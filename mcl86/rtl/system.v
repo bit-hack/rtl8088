@@ -146,7 +146,13 @@ module System(
   input  [ 7:0] iCpuRamDataR,
   output [ 7:0] oCpuRamDataW,
   output        oCpuRamW,
-  output        oCpuRamR
+  output        oCpuRamR,
+  // video interface
+  output [ 5:0] oVgaR,
+  output [ 6:0] oVgaG,
+  output [ 5:0] oVgaB,
+  output        oVgaVSync,
+  output        oVgaHSync  
 );
 
   wire rst;
@@ -159,9 +165,13 @@ module System(
   // 0xFE000-0xFFFFF
   wire        selectBios = { cpuAddr[19:13], 1'b0 } == 8'hFE;
   wire        selectRam  = !selectBios;
+  wire        selectCga;
+
+  wire [ 7:0] cpuDataIn = selectCga  ? cgaDataOut :
+                          selectBios ? biosDataR  :
+                          iCpuRamDataR;
 
   wire [19:0] cpuAddr;
-  wire [ 7:0] cpuDataIn = selectBios ? biosDataR : iCpuRamDataR;
   wire [ 7:0] cpuDataOut;
   wire        cpuMemW;
   wire        cpuMemR;
@@ -207,5 +217,37 @@ module System(
     .iCpuIOW  (cpuIOW), 
     .iCpuIOR  (cpuIOR)
   );
+
+  wire [7:0] cgaDataOut;
+  wire [3:0] vgaDacIn;
+  cga uCgaVideo (
+    .clk       (iClk),        // 28.636MHz
+    .bus_a     (cpuAddr),
+    .bus_ior_l (!cpuIOR),
+    .bus_iow_l (!cpuIOW),
+    .bus_memr_l(!cpuMemR),
+    .bus_memw_l(!cpuMemW),
+    .bus_d     (cpuDataOut),
+    .bus_out   (cgaDataOut),
+    .bus_dir   (selectCga),
+    .bus_aen   (0),
+    .bus_rdy   (),
+    .hsync     (),            // ignore
+    .dbl_hsync (oVgaHSync),   // vga hsync
+    .vsync     (oVgaVSync),   // vga vsync
+    .dbl_video (vgaDacIn),    // vga colour
+    .thin_font (0)
+    );
+
+    // CGA digital to analog converter
+    cga_vgaport vga (
+        .clk  (iClk),
+        .video(vgaDacIn),
+        .red  (oVgaR),
+        .green(oVgaG),
+        .blue (oVgaB)
+    );
+
+    defparam uCgaVideo.BLINK_MAX = 24'd4772727;
 
 endmodule

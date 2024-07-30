@@ -3,7 +3,7 @@ project(project8088)
 
 add_subdirectory(external/udis86)
 
-file(GLOB V_SRC rtl/*.v rtl/cpu/*.v)
+file(GLOB V_SRC rtl/*.v rtl/cpu/*.v rtl/video/*.v)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT})
 add_executable(p88 main.cpp)
