@@ -6,7 +6,6 @@ rtl/cpu/eu.v
 rtl/cpu/eu_rom.v
 rtl/video/cga.v
 rtl/video/cga_attrib.v
-rtl/video/cga_composite.v
 rtl/video/cga_pixel.v
 rtl/video/cga_scandoubler.v
 rtl/video/cga_sequencer.v

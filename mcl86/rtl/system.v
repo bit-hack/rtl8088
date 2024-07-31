@@ -231,12 +231,10 @@ module System(
     .bus_out   (cgaDataOut),
     .bus_dir   (selectCga),
     .bus_aen   (0),
-    .bus_rdy   (),
-    .hsync     (),            // ignore
     .dbl_hsync (oVgaHSync),   // vga hsync
     .vsync     (oVgaVSync),   // vga vsync
     .dbl_video (vgaDacIn),    // vga colour
-    .thin_font (0)
+    .thin_font (1)
     );
 
     // CGA digital to analog converter

@@ -103,35 +103,35 @@ module crtc6845(
         /* verilator lint_on WIDTH */
     end
 
-    reg [7:0] h_total     = H_TOTAL;         //R0 97
-    reg [7:0] h_disp      = H_DISP;           //R1 80
-    reg [7:0] h_syncpos   = H_SYNCPOS;    //R2 82
-    reg [3:0] h_syncwidth = H_SYNCWIDTH;  //R3 15
-    reg [6:0] v_total     = V_TOTAL;      //R4 25
-    reg [4:0] v_totaladj  = V_TOTALADJ;   //R5 6
-    reg [6:0] v_disp      = V_DISP;         //R6 25
-    reg [6:0] v_syncpos   = V_SYNCPOS;   //R7 25
-    reg [4:0] v_maxscan   = V_MAXSCAN;       //R9 13
-    reg [6:0] c_start     = C_START;     //R10 11
-    reg [4:0] c_end       = C_END;       //R11 12
-    reg [13:0] start_a    = 14'd0;    //R13/R14
-    reg [13:0] cursor_a   = 14'd92;  //R14/R15
+    reg [7:0] h_total     = H_TOTAL;      //R0  97
+    reg [7:0] h_disp      = H_DISP;       //R1  80
+    reg [7:0] h_syncpos   = H_SYNCPOS;    //R2  82
+    reg [3:0] h_syncwidth = H_SYNCWIDTH;  //R3  15
+    reg [6:0] v_total     = V_TOTAL;      //R4  25
+    reg [4:0] v_totaladj  = V_TOTALADJ;   //R5  6
+    reg [6:0] v_disp      = V_DISP;       //R6  25
+    reg [6:0] v_syncpos   = V_SYNCPOS;    //R7  25
+    reg [4:0] v_maxscan   = V_MAXSCAN;    //R9  13
+    reg [6:0] c_start     = C_START;      //R10 11
+    reg [4:0] c_end       = C_END;        //R11 12
+    reg [13:0] start_a    = 14'd0;        //R13/R14
+    reg [13:0] cursor_a   = 14'd92;       //R14/R15
 
     // Counters
-    reg [7:0] h_count = 8'd0;
-    reg [3:0] h_synccount = 4'd1; // Must start at 1
-    reg [4:0] v_scancount = 5'd0;
-    reg [6:0] v_rowcount = 7'd0;
-    reg [3:0] v_synccount = 4'd0;
+    reg [7:0] h_count        = 8'd0;
+    reg [3:0] h_synccount    = 4'd1; // Must start at 1
+    reg [4:0] v_scancount    = 5'd0;
+    reg [6:0] v_rowcount     = 7'd0;
+    reg [3:0] v_synccount    = 4'd0;
     reg [4:0] cursor_counter = 5'd0; // Cursor blink
 
 
-    wire [4:0] next_v_scancount;
-    wire [13:0] ma = 14'd0;
-    reg [13:0] ma_rst = 14'd0; // Column reset of memory address
+    wire [ 4:0] next_v_scancount;
+    wire [13:0] ma     = 14'd0;
+    reg  [13:0] ma_rst = 14'd0; // Column reset of memory address
 
-    reg vs = 1'b0;
-    reg hs = 1'b0;
+    reg vs    = 1'b0;
+    reg hs    = 1'b0;
     reg hdisp = 1'b1;
     reg vdisp = 1'b1;
 
@@ -141,8 +141,8 @@ module crtc6845(
     wire h_end;
     wire v_end;
 
-    assign vsync = vs;
-    assign hsync = hs;
+    assign vsync          = vs;
+    assign hsync          = hs;
     assign display_enable = hdisp & vdisp;
 
     assign row_addr = v_scancount;
@@ -157,7 +157,7 @@ module crtc6845(
         if (divclk) begin
             if (h_count == h_total) begin
                 h_count <= 8'd0;
-                hdisp <= 1'b1;
+                hdisp   <= 1'b1;
             end else begin
                 h_count <= h_count + 1;
                 // Blanking
@@ -196,7 +196,7 @@ module crtc6845(
                     v_scancount <= v_scancount + 1;
                 end else begin
                     v_scancount <= 0;
-                    v_rowcount <= v_rowcount + 1;
+                    v_rowcount  <= v_rowcount + 1;
 
                     // Handle vertical pulse
                     if (v_rowcount + 1 == v_syncpos) begin
@@ -213,9 +213,9 @@ module crtc6845(
                 if (v_scancount != v_maxscan + v_totaladj) begin
                     v_scancount <= v_scancount + 1;
                 end else begin
-                    v_scancount <= 0;
-                    v_rowcount <= 0;
-                    vdisp <= 1'b1;
+                    v_scancount    <= 0;
+                    v_rowcount     <= 0;
+                    vdisp          <= 1'b1;
                     cursor_counter <= cursor_counter + 1;
                 end
             end
@@ -234,17 +234,13 @@ module crtc6845(
     end
 
     // Cursor
-    assign cur_on = (v_scancount >= c_start[4:0]) &
-                    (v_scancount <= c_end[4:0]);
-    assign blink = (c_start[6:5] == 2'b00) |
-                   (c_start[5] ? cursor_counter[4] : cursor_counter[3]);
-    assign cursor = (cursor_a == mem_addr) & cur_on &
-                    blink & (c_start[6:5] != 2'b01) & display_enable;
+    assign cur_on = (v_scancount >= c_start[4:0]) & (v_scancount <= c_end[4:0]);
+    assign blink  = (c_start[6:5] == 2'b00) | (c_start[5] ? cursor_counter[4] : cursor_counter[3]);
+    assign cursor = (cursor_a == mem_addr) & cur_on & blink & (c_start[6:5] != 2'b01) & display_enable;
 
     // Memory address generator
     assign mem_addr = start_a + ma_rst + {6'b000000, h_count};
-    always @ (posedge clk)
-    begin
+    always @(posedge clk) begin
         if (divclk & (v_end | h_end)) begin
             if (v_end) begin
                 ma_rst <= 14'd0;
