@@ -1,0 +1,15 @@
+icext.v
+system/system.v
+system/i8253.v
+system/cpu/8088.v
+system/cpu/biu_min.v
+system/cpu/eu.v
+system/cpu/eu_rom.v
+system/video/cga.v
+system/video/cga_attrib.v
+system/video/cga_pixel.v
+system/video/cga_scandoubler.v
+system/video/cga_sequencer.v
+system/video/cga_vgaport.v
+system/video/cga_vram.v
+system/video/crtc6845.v
